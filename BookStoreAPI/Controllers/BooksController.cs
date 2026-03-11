@@ -21,13 +21,29 @@ namespace BookStoreAPI.Controllers
             return Ok(_context.Books.ToList());
         }
         [HttpGet("search")]
-        public IActionResult Search(string title)
+        public IActionResult Search(string? title, int? id, string? author)
         {
-            var books = _context.Books
-                .Where(b => b.Title.Contains(title))
-                .ToList();
+            var books = _context.Books.ToList(); 
 
-            return Ok(books);
+            var results = new List<Book>();
+
+            foreach (var book in books) 
+            {
+                if (id.HasValue && book.Id == id.Value)
+                {
+                    results.Add(book);
+                }
+                else if (!string.IsNullOrEmpty(title) && book.Title.Contains(title, StringComparison.OrdinalIgnoreCase))
+                {
+                    results.Add(book);
+                }
+                else if (!string.IsNullOrEmpty(author) && book.Author.Contains(author, StringComparison.OrdinalIgnoreCase))
+                {
+                    results.Add(book);
+                }
+            }
+
+            return Ok(results);
         }
         [HttpPost]
         public IActionResult AddBook(Book book)
@@ -39,7 +55,7 @@ namespace BookStoreAPI.Controllers
         [HttpPost("sell")]
         public IActionResult SellBook([FromBody] SellRequest request)
         {
-            var book = _context.Books.FirstOrDefault(b => b.Title == request.Title);
+            var book = _context.Books.FirstOrDefault(b => b.Title.ToLower() == request.Title.ToLower());
 
             if (book == null)
                 return BadRequest("Book not found");
@@ -74,7 +90,7 @@ namespace BookStoreAPI.Controllers
             _context.Books.Remove(book);
             _context.SaveChanges();
 
-            return Ok();
+            return NoContent();
         }
 
         [HttpPut("{id}")]
